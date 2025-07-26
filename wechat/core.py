@@ -9,7 +9,7 @@ import uuid
 
 import requests
 
-from pyee.executor import ExecutorEventEmitter
+from pyee.executor import EventEmitter
 
 from wechat.events import ALL_MESSAGE, WECHAT_CONNECT_MESSAGE
 from wechat.utils import hook
@@ -18,34 +18,32 @@ from wechat.logger import logger
 
 
 class ReqData:
-    __response_message = None
-    msg_type = 0
-    request_data = None
+    __response_message: typing.Optional[dict] = None
+    msg_type: int = 0
+    request_data: typing.Optional[dict] = None
 
-    def __init__(self, msg_type, data):
+    def __init__(self, msg_type: int, data: dict):
         self.msg_type = msg_type
         self.request_data = data
         self.__wait_event = threading.Event()
 
-    def wait_response(self, timeout=None):
+    def wait_response(self, timeout: typing.Optional[int] = None) -> dict:
         self.__wait_event.wait(timeout)
         return self.get_response_data()
 
-    def on_response(self, message):
+    def on_response(self, message: dict) -> None:
         self.__response_message = message
         self.__wait_event.set()
 
-    def get_response_data(self):
+    def get_response_data(self) -> typing.Union[dict, None]:
         if self.__response_message is None:
             return None
         return self.__response_message["data"]
 
 
 class RequestHandler(socketserver.BaseRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
-    def handle(self):
+    def handle(self) -> None:
         try:
             data = b""
             while True:
@@ -64,47 +62,64 @@ class RequestHandler(socketserver.BaseRequestHandler):
                     key, value = line.split(": ", 1)
                     headers[key] = value
 
-            hex_data = data.split(b"\r\n\r\n", )[-1]
-            wechat = getattr(self.server, "wechat")
+            hex_data = data.split(b"\r\n\r\n")[-1]
+            hex_data_bytes = binascii.unhexlify(hex_data)
             try:
-                raw_data = binascii.unhexlify(hex_data).decode("utf-8").rstrip("\n")
+                raw_data = hex_data_bytes.decode("utf-8").rstrip("\n")
             except UnicodeDecodeError:
-                raw_data = binascii.unhexlify(hex_data).decode("gbk").rstrip("\n")
+                raw_data = hex_data_bytes.decode("gbk").rstrip("\n")
             event = json.loads(raw_data)
-            event["client_id"] = headers["Client-Id"]
+            event["client_id"] = int(headers["Client-Id"])
+            wechat = getattr(self.server, "wechat")
             wechat.on_recv(event)
         except Exception:
-            print(traceback.format_exc())
+            logger.warning(traceback.format_exc())
 
 
 class WeChat:
 
-    def __init__(self, pid=0, host="127.0.0.1", port=19001):
+    def __init__(
+            self, pid: int = 0,
+            host: str = "127.0.0.1",
+            port: int = 19088,
+            server_host: str = "127.0.0.1",
+            server_port: int = 18999,
+            timeout: int = 10
+    ):
+        self.pid = pid
         self.host = host
         self.port = port
-        self.pid = pid
-        self.url = f"http://{self.host}:{self.port}/api/client"
-        self.event_emitter = ExecutorEventEmitter()
+        self.server_host = server_host
+        self.server_port = server_port
+        self.timeout = timeout
+        self.base_url = f"http://{self.host}:{self.port}"
+        self.server_base_url = f"http://{self.server_host}:{self.server_port}"
+        self.event_emitter = EventEmitter()
         self.clients = []
         self.__req_data_cache = {}
-        self.server_host = "127.0.0.1"
-        self.server_port = 8000
         self.login_event = threading.Event()
         self.server_thread = threading.Thread(target=self.start_server, daemon=True)
         self.server_thread.start()
         hook(self.pid, self.host, self.port, f"http://{self.server_host}:{self.server_port}")
-        logger.info(f"API Server at {self.host}:{self.port}")
+        logger.info(f"API Server at {self.base_url}")
 
-    def send(self, client_id: int = 0, data: dict = None):
-        return requests.post(
-            url=self.url + f"/{client_id}",
-            data=binascii.hexlify(json.dumps(data, ensure_ascii=False).encode("utf-8"))
-        ).json()
+    def get_wechat_version(self) -> dict:
+        return requests.post(url=f"{self.base_url}/api/get_wechat_version").json()
 
-    def inject(self, pid: int):
-        return requests.post(url=f"http://{self.host}:{self.port}/api/inject" + f"/{pid}").json()
+    def open(self) -> dict:
+        return requests.post(url=f"{self.base_url}/api/open").json()
 
-    def send_sync(self, client_id: int, data: dict, timeout: int = 10):
+    def inject(self, pid: int) -> dict:
+        return requests.post(url=f"{self.base_url}/api/inject/{pid}").json()
+
+    def destory(self) -> dict:
+        return requests.post(url=f"{self.base_url}/api/destory").json()
+
+    def send(self, client_id: int = 0, data: dict = None) -> dict:
+        return requests.post(url=f"{self.base_url}/api/client/{client_id}",
+                             data=binascii.hexlify(json.dumps(data, ensure_ascii=False).encode("utf-8"))).json()
+
+    def send_sync(self, client_id: int, data: dict, timeout: int = None) -> typing.Union[dict, None]:
         field_name = "trace"
         if data.get(field_name) is None:
             data[field_name] = str(uuid.uuid4())
@@ -113,9 +128,9 @@ class WeChat:
         self.__req_data_cache[data[field_name]] = req_data
 
         self.send(client_id, data)
-        return req_data.wait_response(timeout)
+        return req_data.wait_response(timeout or self.timeout)
 
-    def on_event(self, data: dict):
+    def on_event(self, data: dict) -> None:
         try:
             if data.get("type") is not None:
                 if data["type"] == WECHAT_CONNECT_MESSAGE:
@@ -136,7 +151,7 @@ class WeChat:
         except Exception:
             logger.error(traceback.format_exc())
 
-    def on_recv(self, data: dict):
+    def on_recv(self, data: dict) -> None:
         logger.debug(data)
         if data.get("trace") is not None:
             req_data = self.__req_data_cache[data["trace"]]
@@ -157,14 +172,11 @@ class WeChat:
 
         return wrapper
 
-    def open(self):
-        return self.send()
-
-    def start_server(self):
-        logger.info(f"Listen Server at {self.server_host}:{self.server_port}")
+    def start_server(self) -> typing.NoReturn:
+        logger.info(f"Event Server at {self.server_base_url}")
         self.server = socketserver.ThreadingTCPServer((self.server_host, self.server_port), RequestHandler)
         self.server.wechat = self
         self.server.serve_forever()
 
-    def run(self):
+    def run(self) -> typing.NoReturn:
         self.server_thread.join()
