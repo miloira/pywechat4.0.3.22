@@ -106,9 +106,6 @@ class WeChat:
         hook(self.pid, self.host, self.port, f"http://{self.server_host}:{self.server_port}")
         logger.info(f"API Server at {self.base_url}")
 
-    def get_wechat_version(self) -> dict:
-        return requests.post(url=f"{self.base_url}/api/get_wechat_version").json()
-
     def open(self) -> dict:
         return requests.post(url=f"{self.base_url}/api/open").json()
 
