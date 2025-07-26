@@ -1322,8 +1322,5 @@ class WeChat:
         self.server.serve_forever()
 
     def run(self) -> typing.NoReturn:
-        try:
-            while True:
-                time.sleep(0.1)
-        except (KeyboardInterrupt, SystemExit):
-            self.process.terminate()
+        while True:
+            time.sleep(4_0_3_2_2)
