@@ -66,16 +66,12 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
             hex_data = data.split(b"\r\n\r\n")[-1]
             hex_data_bytes = binascii.unhexlify(hex_data)
-            try:
-                raw_data = hex_data_bytes.decode("utf-8", "replace").rstrip("\n")
-            except UnicodeDecodeError:
-                raw_data = hex_data_bytes.decode("gbk").rstrip("\n")
+            raw_data = hex_data_bytes.decode("utf-8", "backslashreplace").rstrip("\n")
             event = json.loads(raw_data)
             event["client_id"] = int(headers["Client-Id"])
             wechat = getattr(self.server, "wechat")
             wechat.on_recv(event)
         except Exception:
-            print(hex_data_bytes)
             logger.warning(traceback.format_exc())
 
 

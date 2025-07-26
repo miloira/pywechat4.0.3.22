@@ -13,7 +13,7 @@ HOOK = TOOLS / "hook.exe"
 
 
 def hook(pid: int, ip: str, port: int, callback_url) -> subprocess.Popen:
-    return subprocess.Popen(f"{HOOK} {pid} {ip}:{port} {callback_url}", stdout=subprocess.DEVNULL,
+    return subprocess.Popen(f'"{HOOK}" {pid} {ip}:{port} {callback_url}', stdout=subprocess.DEVNULL,
                             stderr=subprocess.DEVNULL)
 
 
