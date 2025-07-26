@@ -16,10 +16,11 @@ def detach_wechat():
 detach_wechat()
 
 wechat = WeChat()
-wechat.open()
+
 
 @wechat.handle(events.TEXT_MESSAGE)
 def _(bot, event):
     print(event)
+
 
 wechat.run()

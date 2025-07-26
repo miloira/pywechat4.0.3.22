@@ -3,6 +3,7 @@ import datetime
 import json
 import socketserver
 import threading
+import time
 import traceback
 import typing
 import uuid
@@ -77,15 +78,17 @@ class RequestHandler(socketserver.BaseRequestHandler):
 class WeChat:
 
     def __init__(
-        self,
-        pid: int = 0,
-        host: str = "127.0.0.1",
-        port: int = 19088,
-        server_host: str = "127.0.0.1",
-        server_port: int = 18999,
-        timeout: int = 10
+            self,
+            smart: bool = True,
+            pid: int = 0,
+            host: str = "127.0.0.1",
+            port: int = 19088,
+            server_host: str = "127.0.0.1",
+            server_port: int = 18999,
+            timeout: int = 10
     ):
-        self.pid = pid
+        self.smart = smart
+        self.pid = 0 if self.smart else pid
         self.host = host
         self.port = port
         self.server_host = server_host
@@ -99,8 +102,10 @@ class WeChat:
         self.login_event = threading.Event()
         self.server_thread = threading.Thread(target=self.start_server, daemon=True)
         self.server_thread.start()
-        hook(self.pid, self.host, self.port, f"http://{self.server_host}:{self.server_port}")
+        self.process = hook(self.pid, self.host, self.port, f"http://{self.server_host}:{self.server_port}")
         logger.info(f"API Server at {self.base_url}")
+        if smart:
+            self.open()
 
     def open(self) -> dict:
         return requests.post(url=f"{self.base_url}/api/open").json()
@@ -1317,4 +1322,8 @@ class WeChat:
         self.server.serve_forever()
 
     def run(self) -> typing.NoReturn:
-        self.server_thread.join()
+        try:
+            while True:
+                time.sleep(0.1)
+        except (KeyboardInterrupt, SystemExit):
+            self.process.terminate()
