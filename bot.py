@@ -15,12 +15,11 @@ def detach_wechat():
 
 detach_wechat()
 
-wechat = WeChat(2832)
-
+wechat = WeChat()
+wechat.open()
 
 @wechat.handle(events.TEXT_MESSAGE)
 def _(bot, event):
-    # print(wechat.send_sync(1, {"type": 11028, "data": {}, "trace": "123"}))
     print(event)
 
 wechat.run()
