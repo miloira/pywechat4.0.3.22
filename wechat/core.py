@@ -258,17 +258,6 @@ class WeChat:
         }
         return self.send(client_id, data)
 
-    def send_collection(self, client_id: int, to_wxid: str, local_id: int) -> dict:
-        """发送收藏消息"""
-        data = {
-            "type": 11110,
-            "data": {
-                "to_wxid": to_wxid,
-                "local_id": local_id
-            }
-        }
-        return self.send(client_id, data)
-
     def create_room(self, client_id: int, member_list: List[str]) -> dict:
         """创建群聊"""
         data = {
@@ -402,17 +391,6 @@ class WeChat:
             "type": 11066,
             "data": {
                 "transferid": transfer_id
-            }
-        }
-        return self.send(client_id, data)
-
-    def modify_tag(self, client_id: int, label_id: int, label_name: str) -> dict:
-        """修改标签"""
-        data = {
-            "type": 11139,
-            "data": {
-                "label_id": label_id,
-                "label_name": label_name
             }
         }
         return self.send(client_id, data)
@@ -970,6 +948,17 @@ class WeChat:
         }
         return self.send_sync(client_id, data, timeout)
 
+    def modify_tag(self, client_id: int, label_id: int, label_name: str) -> dict:
+        """修改标签"""
+        data = {
+            "type": 11139,
+            "data": {
+                "label_id": label_id,
+                "label_name": label_name
+            }
+        }
+        return self.send(client_id, data)
+
     def delete_tag(self, client_id: int, label_id: int, timeout: Optional[int] = None) -> dict:
         """删除标签"""
         data = {
@@ -1001,31 +990,11 @@ class WeChat:
         }
         return self.send_sync(client_id, data, timeout)
 
-    def collect(self, client_id: int, msg_id: str) -> dict:
-        """收藏消息"""
-        data = {
-            "type": 11111,
-            "data": {
-                "msgid": msg_id
-            }
-        }
-        return self.send(client_id, data)
-
     def get_collections(self, client_id: int, timeout: Optional[int] = None) -> dict:
         """获取收藏列表"""
         data = {
             "type": 11109,
             "data": {}
-        }
-        return self.send_sync(client_id, data, timeout)
-
-    def voice_to_text(self, client_id: int, msg_id: str, timeout: Optional[int] = None) -> dict:
-        """语音消息转文本"""
-        data = {
-            "type": 11112,
-            "data": {
-                "msgid": msg_id
-            }
         }
         return self.send_sync(client_id, data, timeout)
 
