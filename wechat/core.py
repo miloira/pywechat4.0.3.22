@@ -15,7 +15,6 @@ from pyee.executor import EventEmitter
 
 from wechat.events import ALL_MESSAGE, WECHAT_CONNECT_MESSAGE
 from wechat.utils import hook
-
 from wechat.logger import logger
 
 
@@ -259,14 +258,6 @@ class WeChat:
         }
         return self.send(client_id, data)
 
-    def create_room(self, client_id: int, member_list: List[str]) -> dict:
-        """创建群聊"""
-        data = {
-            "type": 11068,
-            "data": member_list
-        }
-        return self.send(client_id, data)
-
     def send_collection(self, client_id: int, to_wxid: str, local_id: int) -> dict:
         """发送收藏消息"""
         data = {
@@ -278,15 +269,132 @@ class WeChat:
         }
         return self.send(client_id, data)
 
-    def collect(self, client_id: int, msg_id: str) -> dict:
-        """收藏消息"""
+    def create_room(self, client_id: int, member_list: List[str]) -> dict:
+        """创建群聊"""
         data = {
-            "type": 11111,
-            "data": {
-                "msgid": msg_id
-            }
+            "type": 11068,
+            "data": member_list
         }
         return self.send(client_id, data)
+
+    def create_room_by_protocol(self, client_id: int, member_list: List[str], timeout: Optional[int] = None) -> dict:
+        """创建群聊（协议）"""
+        data = {
+            "type": 11246,
+            "data": member_list
+        }
+        return self.send_sync(client_id, data, timeout)
+
+    def get_invitation_relationship(self, client_id: int, room_wxid: str, timeout: Optional[int] = None) -> dict:
+        """获取群成员邀请关系"""
+        data = {
+            "type": 11134,
+            "data": {
+                "room_wxid": room_wxid
+            }
+        }
+        return self.send_sync(client_id, data, timeout)
+
+    def add_room_member(self, client_id: int, room_wxid: str, member_list: List[str],
+                        timeout: Optional[int] = None) -> dict:
+        """添加群成员"""
+        data = {
+            "type": 11069,
+            "data": {
+                "room_wxid": room_wxid,
+                "member_list": member_list
+            }
+        }
+        return self.send_sync(client_id, data, timeout)
+
+    def invite_room_member(self, client_id: int, room_wxid: str, member_list: List[str],
+                           timeout: Optional[int] = None) -> dict:
+        """邀请群成员"""
+        data = {
+            "type": 11070,
+            "data": {
+                "room_wxid": room_wxid,
+                "member_list": member_list
+            }
+        }
+        return self.send_sync(client_id, data, timeout)
+
+    def remove_room_member(self, client_id: int, room_wxid: str, wxid: str, timeout: Optional[int] = None) -> dict:
+        """移出群成员"""
+        data = {
+            "type": 11071,
+            "data": {
+                "room_wxid": room_wxid,
+                "name": wxid
+            }
+        }
+        return self.send_sync(client_id, data, timeout)
+
+    def modify_room_name(self, client_id: int, room_wxid: str, name: str, timeout: Optional[int] = None) -> dict:
+        """修改群名称"""
+        data = {
+            "type": 11072,
+            "data": {
+                "room_wxid": room_wxid,
+                "name": name
+            }
+        }
+        return self.send_sync(client_id, data, timeout)
+
+    def modify_room_notice(self, client_id: int, room_wxid: str, notice: str, timeout: Optional[int] = None) -> dict:
+        """修改群公告"""
+        data = {
+            "type": 11073,
+            "data": {
+                "room_wxid": room_wxid,
+                "notice": notice
+            }
+        }
+        return self.send_sync(client_id, data, timeout)
+
+    def modify_room_member_nickname(self, client_id: int, room_id: str, nickname: int,
+                                    timeout: Optional[int] = None) -> dict:
+        """修改我在本群的昵称"""
+        data = {
+            "type": 11074,
+            "data": {
+                "room_id": room_id,
+                "nickname": nickname
+            }
+        }
+        return self.send_sync(client_id, data, timeout)
+
+    def display_room_member_nickname(self, client_id: int, room_id: str, status: int = 1,
+                                     timeout: Optional[int] = None) -> dict:
+        """是否显示群成员昵称"""
+        data = {
+            "type": 11075,
+            "data": {
+                "room_id": room_id,
+                "status": status
+            }
+        }
+        return self.send_sync(client_id, data, timeout)
+
+    def get_room_by_protocol(self, client_id: int, wxid: str, timeout: Optional[int] = None) -> dict:
+        """获取群信息（协议）"""
+        data = {
+            "type": 11174,
+            "data": {
+                "wxid": wxid
+            }
+        }
+        return self.send_sync(client_id, data, timeout)
+
+    def exit_room(self, client_id: int, room_id: str, timeout: Optional[int] = None) -> dict:
+        """退出群聊"""
+        data = {
+            "type": 11077,
+            "data": {
+                "room_id": room_id
+            }
+        }
+        return self.send_sync(client_id, data, timeout)
 
     def confirm_receipt(self, client_id: int, transfer_id: str) -> dict:
         """确认收款"""
@@ -309,14 +417,6 @@ class WeChat:
         }
         return self.send(client_id, data)
 
-    def clear_chat_history(self, client_id: int) -> dict:
-        """清除聊天记录"""
-        data = {
-            "type": 11108,
-            "data": {}
-        }
-        return self.send(client_id, data)
-
     def pin_chat(self, client_id: int, wxid: str, status: int, timeout: Optional[int] = None) -> dict:
         """置顶/取消置顶聊天"""
         data = {
@@ -328,31 +428,21 @@ class WeChat:
         }
         return self.send_sync(client_id, data, timeout)
 
-    def create_virtual_nickname(self, client_id: int, nickname: str, head_img_url: str) -> dict:
-        """创建虚拟昵称"""
+    def set_disturb(self, client_id: int, wxid: str, status: int, timeout: Optional[int] = None) -> dict:
+        """开启/关闭消息免打扰"""
         data = {
-            "type": 11194,
+            "type": 11078,
             "data": {
-                "nickname": nickname,
-                "headimg_url": head_img_url
+                "wxid": wxid,
+                "status": status
             }
         }
-        return self.send(client_id, data)
+        return self.send_sync(client_id, data, timeout)
 
-    def switch_virtual_nickname(self, client_id: int, role_type: int) -> dict:
-        """切换虚拟昵称"""
+    def clear_chat_history(self, client_id: int) -> dict:
+        """清除聊天记录"""
         data = {
-            "type": 11195,
-            "data": {
-                "role_type": role_type
-            }
-        }
-        return self.send(client_id, data)
-
-    def delete_virtual_nickname(self, client_id: int) -> dict:
-        """删除虚拟昵称"""
-        data = {
-            "type": 11197,
+            "type": 11108,
             "data": {}
         }
         return self.send(client_id, data)
@@ -567,115 +657,6 @@ class WeChat:
         }
         return self.send_sync(client_id, data, timeout)
 
-    def get_room_by_protocol(self, client_id: int, wxid: str, timeout: Optional[int] = None) -> dict:
-        """获取群信息（协议）"""
-        data = {
-            "type": 11174,
-            "data": {
-                "wxid": wxid
-            }
-        }
-        return self.send_sync(client_id, data, timeout)
-
-    def get_invitation_relationship(self, client_id: int, room_wxid: str, timeout: Optional[int] = None) -> dict:
-        """获取群成员邀请关系"""
-        data = {
-            "type": 11134,
-            "data": {
-                "room_wxid": room_wxid
-            }
-        }
-        return self.send_sync(client_id, data, timeout)
-
-    def create_room_by_protocol(self, client_id: int, member_list: List[str], timeout: Optional[int] = None) -> dict:
-        """创建群聊（协议）"""
-        data = {
-            "type": 11246,
-            "data": member_list
-        }
-        return self.send_sync(client_id, data, timeout)
-
-    def add_room_member(self, client_id: int, room_wxid: str, member_list: List[str],
-                        timeout: Optional[int] = None) -> dict:
-        """添加群成员"""
-        data = {
-            "type": 11069,
-            "data": {
-                "room_wxid": room_wxid,
-                "member_list": member_list
-            }
-        }
-        return self.send_sync(client_id, data, timeout)
-
-    def invite_room_member(self, client_id: int, room_wxid: str, member_list: List[str],
-                           timeout: Optional[int] = None) -> dict:
-        """邀请群成员"""
-        data = {
-            "type": 11070,
-            "data": {
-                "room_wxid": room_wxid,
-                "member_list": member_list
-            }
-        }
-        return self.send_sync(client_id, data, timeout)
-
-    def remove_room_member(self, client_id: int, room_wxid: str, wxid: str, timeout: Optional[int] = None) -> dict:
-        """移出群成员"""
-        data = {
-            "type": 11071,
-            "data": {
-                "room_wxid": room_wxid,
-                "name": wxid
-            }
-        }
-        return self.send_sync(client_id, data, timeout)
-
-    def modify_room_name(self, client_id: int, room_wxid: str, name: str, timeout: Optional[int] = None) -> dict:
-        """修改群名称"""
-        data = {
-            "type": 11072,
-            "data": {
-                "room_wxid": room_wxid,
-                "name": name
-            }
-        }
-        return self.send_sync(client_id, data, timeout)
-
-    def modify_room_notice(self, client_id: int, room_wxid: str, notice: str, timeout: Optional[int] = None) -> dict:
-        """修改群公告"""
-        data = {
-            "type": 11073,
-            "data": {
-                "room_wxid": room_wxid,
-                "notice": notice
-            }
-        }
-        return self.send_sync(client_id, data, timeout)
-
-    def modify_room_member_nickname(self, client_id: int, room_id: str, nickname: int,
-                                    timeout: Optional[int] = None) -> dict:
-        """修改我在本群的昵称"""
-        data = {
-            "type": 11074,
-            "data": {
-                "room_id": room_id,
-                "nickname": nickname
-            }
-        }
-        return self.send_sync(client_id, data, timeout)
-
-    def display_room_member_nickname(self, client_id: int, room_id: str, status: int = 1,
-                                     timeout: Optional[int] = None) -> dict:
-        """是否显示群成员昵称"""
-        data = {
-            "type": 11075,
-            "data": {
-                "room_id": room_id,
-                "status": status
-            }
-        }
-        return self.send_sync(client_id, data, timeout)
-
     def edit_address_book(self, client_id: int, room_id: str, status: int = 1, timeout: Optional[int] = None) -> dict:
         """保存/移除通讯录"""
         data = {
@@ -683,16 +664,6 @@ class WeChat:
             "data": {
                 "room_id": room_id,
                 "status": status
-            }
-        }
-        return self.send_sync(client_id, data, timeout)
-
-    def exit_room(self, client_id: int, room_id: str, timeout: Optional[int] = None) -> dict:
-        """退出群聊"""
-        data = {
-            "type": 11077,
-            "data": {
-                "room_id": room_id
             }
         }
         return self.send_sync(client_id, data, timeout)
@@ -981,14 +952,6 @@ class WeChat:
         }
         return self.send_sync(client_id, data, timeout)
 
-    def get_collections(self, client_id: int, timeout: Optional[int] = None) -> dict:
-        """获取收藏列表"""
-        data = {
-            "type": 11109,
-            "data": {}
-        }
-        return self.send_sync(client_id, data, timeout)
-
     def get_tags(self, client_id: int, timeout: Optional[int] = None) -> dict:
         """获取标签列表"""
         data = {
@@ -1038,23 +1001,30 @@ class WeChat:
         }
         return self.send_sync(client_id, data, timeout)
 
+    def collect(self, client_id: int, msg_id: str) -> dict:
+        """收藏消息"""
+        data = {
+            "type": 11111,
+            "data": {
+                "msgid": msg_id
+            }
+        }
+        return self.send(client_id, data)
+
+    def get_collections(self, client_id: int, timeout: Optional[int] = None) -> dict:
+        """获取收藏列表"""
+        data = {
+            "type": 11109,
+            "data": {}
+        }
+        return self.send_sync(client_id, data, timeout)
+
     def voice_to_text(self, client_id: int, msg_id: str, timeout: Optional[int] = None) -> dict:
         """语音消息转文本"""
         data = {
             "type": 11112,
             "data": {
                 "msgid": msg_id
-            }
-        }
-        return self.send_sync(client_id, data, timeout)
-
-    def set_disturb(self, client_id: int, wxid: str, status: int, timeout: Optional[int] = None) -> dict:
-        """开启/关闭消息免打扰"""
-        data = {
-            "type": 11078,
-            "data": {
-                "wxid": wxid,
-                "status": status
             }
         }
         return self.send_sync(client_id, data, timeout)
@@ -1132,6 +1102,35 @@ class WeChat:
             }
         }
         return self.send_sync(client_id, data, timeout)
+
+    def create_virtual_nickname(self, client_id: int, nickname: str, head_img_url: str) -> dict:
+        """创建虚拟昵称"""
+        data = {
+            "type": 11194,
+            "data": {
+                "nickname": nickname,
+                "headimg_url": head_img_url
+            }
+        }
+        return self.send(client_id, data)
+
+    def switch_virtual_nickname(self, client_id: int, role_type: int) -> dict:
+        """切换虚拟昵称"""
+        data = {
+            "type": 11195,
+            "data": {
+                "role_type": role_type
+            }
+        }
+        return self.send(client_id, data)
+
+    def delete_virtual_nickname(self, client_id: int) -> dict:
+        """删除虚拟昵称"""
+        data = {
+            "type": 11197,
+            "data": {}
+        }
+        return self.send(client_id, data)
 
     def init_video_account(self, client_id: int, timeout: Optional[int] = None) -> dict:
         """视频号初始化"""
