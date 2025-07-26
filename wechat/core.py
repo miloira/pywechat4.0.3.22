@@ -77,12 +77,13 @@ class RequestHandler(socketserver.BaseRequestHandler):
 class WeChat:
 
     def __init__(
-            self, pid: int = 0,
-            host: str = "127.0.0.1",
-            port: int = 19088,
-            server_host: str = "127.0.0.1",
-            server_port: int = 18999,
-            timeout: int = 10
+        self,
+        pid: int = 0,
+        host: str = "127.0.0.1",
+        port: int = 19088,
+        server_host: str = "127.0.0.1",
+        server_port: int = 18999,
+        timeout: int = 10
     ):
         self.pid = pid
         self.host = host
